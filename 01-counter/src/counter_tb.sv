@@ -1,21 +1,4 @@
 `timescale 1ns / 1ps
-/**
-* @file counter_tb.sv
-* @brief Test bench for the updown_counter module.
-* @details This test bench verifies the functionality of the updown_counter module by simulating various scenarios.
-* The present test bench includes basic setup and a few test cases to validate the counter's behavior.
-* 1. Load value into the counter and check if it matches.
-* 2. Count up and check if the count matches the expected value.
-* 3. Count down and check if the count matches the expected value.
-* 4. Disable the counter and check if the count remains unchanged.
-* 
-* You need to add the following test cases:
-* 5. Reset the counter during operation and check if it resets to zero.
-* 6. Check the counter's behavior when the load signal is asserted while counting.
-* 7. Check the counter's behavior when the enable signal is deasserted while counting.
-* 
-* You also need to add a clock generation block to simulate the clock signal.
-*/
 
 module counter_tb();
     logic clk;
@@ -27,13 +10,19 @@ module counter_tb();
     logic [3:0] count;
     logic test_passed;
 
-    // Clock generation
-    initial begin
-        // Fill in code here
-    end
+    // Clock generation: 10ns period
+    initial clk = 0;
+    always #5 clk = ~clk;
 
-    // Instance of student's module
-    updown_counter dut(
+    // Instance of the counter module
+    updown_counter dut (
+        .clk(clk),
+        .rst_n(rst_n),
+        .load(load),
+        .up_down(up_down),
+        .enable(enable),
+        .d_in(d_in),
+        .count(count)
     );
 
     initial begin
@@ -84,10 +73,35 @@ module counter_tb();
         end
 
         // Test Case 5: Reset during operation
+        enable = 1;
+        up_down = 1;
+        #10;
+        rst_n = 0;
+        #10;
+        rst_n = 1;
+        if (count !== 4'h0) begin
+            $display("Test 5 Failed: Reset during operation");
+            test_passed = 1'b0;
+        end
 
         // Test Case 6: Load while counting
+        d_in = 4'hC;
+        load = 1;
+        #10;
+        load = 0;
+        if (count !== 4'hC) begin
+            $display("Test 6 Failed: Load while counting");
+            test_passed = 1'b0;
+        end
 
         // Test Case 7: Disable while counting
+        enable = 0;
+        up_down = 1;
+        #20; // Wait two clock cycles
+        if (count !== 4'hC) begin
+            $display("Test 7 Failed: Disable while counting");
+            test_passed = 1'b0;
+        end
 
         // Final check
         if (test_passed) begin
@@ -96,6 +110,6 @@ module counter_tb();
             $display("Some tests failed.");
         end
 
-        $finish(0);
+        $finish;
     end
 endmodule
